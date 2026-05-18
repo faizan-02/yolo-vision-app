@@ -22,7 +22,7 @@ COPY backend/ backend/
 COPY *.pt ./
 COPY --from=builder /app/frontend/out ./frontend/out
 
-ENV PORT=8000
-EXPOSE 8000
+ENV PORT=7994
+EXPOSE 7994
 
 CMD ["sh", "-c", "python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT"]
