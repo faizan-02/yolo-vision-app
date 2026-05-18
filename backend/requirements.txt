@@ -6,6 +6,7 @@ fastapi
 uvicorn
 python-multipart
 opencv-python-headless
+ultralytics==8.4.51
 aiofiles
 pandas
 seaborn
