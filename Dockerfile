@@ -23,6 +23,7 @@ COPY *.pt ./
 COPY --from=builder /app/frontend/out ./frontend/out
 
 ENV PORT=7994
+ENV YOLO_CONFIG_DIR=/tmp/Ultralytics
 EXPOSE 7994
 
 CMD ["sh", "-c", "python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT"]
