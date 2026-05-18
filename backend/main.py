@@ -27,17 +27,19 @@ video_jobs = {}
 async def lifespan(app: FastAPI):
     global model
     import pathlib
-    # Fix for loading Linux-trained models on Windows
-    temp = pathlib.PosixPath
-    pathlib.PosixPath = pathlib.WindowsPath
+    import platform
+    
+    # Fix for loading cross-platform PyTorch models
+    # If running on Linux but loading a Windows-saved model, map WindowsPath to PosixPath
+    if platform.system() == 'Linux':
+        pathlib.WindowsPath = pathlib.PosixPath
+    else:
+        pathlib.PosixPath = pathlib.WindowsPath
     
     try:
         model = torch.hub.load('ultralytics/yolov5', 'custom', path=str(MODEL_PATH), trust_repo=True)
     except TypeError:
         model = torch.hub.load('ultralytics/yolov5', 'custom', path=str(MODEL_PATH))
-        
-    # Restore PosixPath just in case
-    pathlib.PosixPath = temp
     
     yield
     executor.shutdown(wait=False)
