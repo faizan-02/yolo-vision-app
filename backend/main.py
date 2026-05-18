@@ -11,10 +11,11 @@ import numpy as np
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from ultralytics import YOLO
+import torch
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 MODEL_PATH = BASE_DIR / "model.pt"
+YOLOV5_DIR = Path("/opt/yolov5")
 UPLOADS_DIR = BASE_DIR / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
 
@@ -35,7 +36,10 @@ async def lifespan(app: FastAPI):
     else:
         pathlib.PosixPath = pathlib.WindowsPath
     
-    model = YOLO(str(MODEL_PATH))
+    if YOLOV5_DIR.exists():
+        model = torch.hub.load(str(YOLOV5_DIR), "custom", path=str(MODEL_PATH), source="local")
+    else:
+        model = torch.hub.load("ultralytics/yolov5", "custom", path=str(MODEL_PATH), trust_repo=True)
     
     yield
     executor.shutdown(wait=False)
@@ -51,8 +55,8 @@ async def detect_image(file: UploadFile = File(...)):
     nparr = np.frombuffer(contents, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     
-    results = model.predict(source=img, verbose=False)
-    annotated = results[0].plot()
+    results = model(img)
+    annotated = results.render()[0]
     
     out_name = f"res_{uuid.uuid4().hex[:8]}.jpg"
     out_path = UPLOADS_DIR / out_name
@@ -61,7 +65,7 @@ async def detect_image(file: UploadFile = File(...)):
     return {
         "status": "success",
         "annotated_image": f"/api/files/{out_name}",
-        "detections": len(results[0].boxes)
+        "detections": len(results.xyxy[0])
     }
 
 def _process_video(job_id, in_path, out_path):
@@ -78,8 +82,8 @@ def _process_video(job_id, in_path, out_path):
             ret, frame = cap.read()
             if not ret:
                 break
-            res = model.predict(source=frame, verbose=False)
-            out.write(res[0].plot())
+            res = model(frame)
+            out.write(res.render()[0])
             
         cap.release()
         out.release()

@@ -10,11 +10,14 @@ RUN npm run build
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 ffmpeg \
+    libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 ffmpeg git \
     && rm -rf /var/lib/apt/lists/*
 
 # Ensure Ultralytics can write its config in read-only container environments
 RUN mkdir -p /tmp/Ultralytics && chmod 777 /tmp/Ultralytics
+
+# Pin YOLOv5 code locally to avoid runtime downloads
+RUN git clone --depth 1 https://github.com/ultralytics/yolov5 /opt/yolov5
 
 WORKDIR /app
 
